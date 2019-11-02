@@ -52,9 +52,13 @@
 
 /* Local Header Files */
 #include "heartBeat.h"
+#include "uartThread.h"
 
 /* Stack size in bytes */
 #define THREADSTACKSIZE    1024
+
+// Global Variables:
+UART_Handle uart_handle;// Global UART_Handle, so we can print to our console from any thread.
 
 /*
  *  ======== main ========
@@ -68,14 +72,10 @@ int main(void)
 
     /* Call driver init functions */
     Board_init();
-
-
-
-
+    uart_handle = uartInit();
 
 
     /* Set priority and stack size attributes */
-
     pthread_attr_init(&pAttrs);
     detachState = PTHREAD_CREATE_DETACHED;
 
@@ -87,12 +87,10 @@ int main(void)
         /* pthread_attr_setstacksize() failed */
         while (1);
     }
-
     /* End of setting priority and stack size attributes */
 
 
     /* Create heartBeat Thread with priority = 2 */
-
     priParam.sched_priority = 2;
 
     pthread_attr_setschedparam(&pAttrs, &priParam);
@@ -102,8 +100,20 @@ int main(void)
         /* pthread_create() failed */
         while (1);
     }
-
     /* End of create heartBeat Thread*/
+
+
+    /* Create UART Thread with priority = 1 */
+    priParam.sched_priority = 1;
+
+    pthread_attr_setschedparam(&pAttrs, &priParam);
+    retc = pthread_create(&uartThread_handler, &pAttrs, uartThread, NULL);
+
+    if (retc != 0) {
+        /* pthread_create() failed */
+        while (1);
+    }
+    /* End of create UART Thread*/
 
 
     /* Start the FreeRTOS scheduler */
