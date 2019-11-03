@@ -46,13 +46,13 @@
 
 /* Driver Header Files */
 #include <ti/drivers/GPIO.h>
+#include <ti_drivers_config.h>
 
-/* Example/Board Header Files */
-#include <ti/drivers/Board.h>
 
 /* Local Header Files */
 #include "heartBeat.h"
 #include "uartThread.h"
+#include "initsUtilsCommands.h"
 
 /* Stack size in bytes */
 #define THREADSTACKSIZE    1024
@@ -73,6 +73,7 @@ int main(void)
     /* Call driver init functions */
     Board_init();
     uartInit();
+    adcInit();
 
 
     /* Set priority and stack size attributes */
