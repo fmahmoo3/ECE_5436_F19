@@ -58,7 +58,7 @@
 #define THREADSTACKSIZE    1024
 
 // Global Variables:
-UART_Handle uart_handle;// Global UART_Handle, so we can print to our console from any thread.
+//UART_Handle uart_handle;// Global UART_Handle, so we can print to our console from any thread.
 
 /*
  *  ======== main ========
@@ -72,7 +72,7 @@ int main(void)
 
     /* Call driver init functions */
     Board_init();
-    uart_handle = uartInit();
+    uartInit();
 
 
     /* Set priority and stack size attributes */
