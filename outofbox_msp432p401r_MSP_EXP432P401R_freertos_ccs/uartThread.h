@@ -10,9 +10,6 @@ extern "C" {
 #endif
 
 
-/* Driver Header Files */
-#include <ti/drivers/UART.h>
-
 extern pthread_t uartThread_handler;
 extern void *uartThread(void *arg0);
 
