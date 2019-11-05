@@ -74,6 +74,7 @@ int main(void)
     Board_init();
     uartInit();
     adcInit();
+    pwmInit();
 
 
     /* Set priority and stack size attributes */

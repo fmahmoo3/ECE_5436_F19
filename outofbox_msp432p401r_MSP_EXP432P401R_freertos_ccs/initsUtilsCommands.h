@@ -10,6 +10,7 @@
 /* Peripheral Init Functions */
 extern void uartInit();
 extern void adcInit();
+extern void pwmInit();
 
 /* Writing to UART Functions */
 extern void getChar(char *val);
@@ -26,6 +27,12 @@ extern void toggleGreen();
 extern void toggleBlue();
 extern void rightSensorRead();
 extern void frontSensorRead();
+extern void forwards();
+extern void backwards();
+extern void stop();
+extern void highSpeed();
+extern void rotateRight();
+extern void rotateLeft();
 
 
 #endif /* INITSUTILSCOMMANDS_H_ */
