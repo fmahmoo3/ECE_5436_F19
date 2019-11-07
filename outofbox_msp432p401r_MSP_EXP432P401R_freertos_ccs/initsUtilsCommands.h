@@ -33,6 +33,7 @@ extern void stop();
 extern void highSpeed();
 extern void rotateRight();
 extern void rotateLeft();
+extern void pid();
 
 
 #endif /* INITSUTILSCOMMANDS_H_ */

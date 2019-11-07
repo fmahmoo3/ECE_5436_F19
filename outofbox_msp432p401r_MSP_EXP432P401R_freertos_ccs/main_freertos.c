@@ -53,6 +53,7 @@
 #include "heartBeat.h"
 #include "uartThread.h"
 #include "initsUtilsCommands.h"
+#include "lightSensorThread.h"
 
 /* Stack size in bytes */
 #define THREADSTACKSIZE    1024
@@ -92,8 +93,8 @@ int main(void)
     /* End of setting priority and stack size attributes */
 
 
-    /* Create heartBeat Thread with priority = 2 */
-    priParam.sched_priority = 2;
+    /* Create heartBeat Thread with priority = 5 */
+    priParam.sched_priority = 5;
 
     pthread_attr_setschedparam(&pAttrs, &priParam);
     retc = pthread_create(&heartBeatThread_handler, &pAttrs, heartBeatThread, NULL);
@@ -116,6 +117,18 @@ int main(void)
         while (1);
     }
     /* End of create UART Thread*/
+
+    /* Create Light Sensor Thread with priority = 2 */
+    priParam.sched_priority = 2;
+
+    pthread_attr_setschedparam(&pAttrs, &priParam);
+    retc = pthread_create(&lightSensorThread_handler, &pAttrs, lightSensorThread, NULL);
+
+    if (retc != 0) {
+        /* pthread_create() failed */
+        while (1);
+    }
+    /* End of create L Thread*/
 
 
     /* Start the FreeRTOS scheduler */

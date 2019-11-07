@@ -267,13 +267,14 @@ void forwards(){
     GPIO_setOutputLowOnPin(GPIO_PORT_P3, GPIO_PIN6); //Left Motor
     GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN6); //Right Motor
 
-    leftMotorDutyCycle = (uint32_t) (((uint64_t) PWM_DUTY_FRACTION_MAX * 37) / 100);  // set duty cycle to 37%
-    rightMotorDutyCycle = (uint32_t) (((uint64_t) PWM_DUTY_FRACTION_MAX * 37) / 100);  // set duty cycle to 37%
+    leftMotorDutyCycle = 37;  // set duty cycle to 37%
+    rightMotorDutyCycle = 37;  // set duty cycle to 37%
 
-    PWM_setDuty(pwm_left_handle, leftMotorDutyCycle);
-    PWM_setDuty(pwm_right_handle, rightMotorDutyCycle);
+    PWM_setDuty(pwm_left_handle, (uint32_t) (((uint64_t) PWM_DUTY_FRACTION_MAX * leftMotorDutyCycle) / 100));
+    PWM_setDuty(pwm_right_handle, (uint32_t) (((uint64_t) PWM_DUTY_FRACTION_MAX * rightMotorDutyCycle) / 100));
 
     putString("Robot is moving forwards");
+    pid();
 }
 
 void backwards(){
@@ -281,11 +282,11 @@ void backwards(){
     GPIO_setOutputHighOnPin(GPIO_PORT_P3, GPIO_PIN6); //Left Motor
     GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN6); //Right Motor
 
-    leftMotorDutyCycle = (uint32_t) (((uint64_t) PWM_DUTY_FRACTION_MAX * 37) / 100);  // set duty cycle to 37%
-    rightMotorDutyCycle = (uint32_t) (((uint64_t) PWM_DUTY_FRACTION_MAX * 37) / 100);  // set duty cycle to 37%
+    leftMotorDutyCycle = 37;  // set duty cycle to 37%
+    rightMotorDutyCycle = 37;  // set duty cycle to 37%
 
-    PWM_setDuty(pwm_left_handle, leftMotorDutyCycle);
-    PWM_setDuty(pwm_right_handle, rightMotorDutyCycle);
+    PWM_setDuty(pwm_left_handle, (uint32_t) (((uint64_t) PWM_DUTY_FRACTION_MAX * leftMotorDutyCycle) / 100));
+    PWM_setDuty(pwm_right_handle, (uint32_t) (((uint64_t) PWM_DUTY_FRACTION_MAX * rightMotorDutyCycle) / 100));
 
     putString("Robot is moving backwards");
 }
@@ -293,11 +294,11 @@ void backwards(){
 void stop(){
     // Since we are stopping the motors, we do not need to set the motor control directions
 
-    leftMotorDutyCycle = (uint32_t) (((uint64_t) PWM_DUTY_FRACTION_MAX * 0) / 100);  // set duty cycle to 0%
-    rightMotorDutyCycle = (uint32_t) (((uint64_t) PWM_DUTY_FRACTION_MAX * 0) / 100);  // set duty cycle to 0%
+    leftMotorDutyCycle = 0;  // set duty cycle to 0%
+    rightMotorDutyCycle = 0;  // set duty cycle to 0%
 
-    PWM_setDuty(pwm_left_handle, leftMotorDutyCycle);
-    PWM_setDuty(pwm_right_handle, rightMotorDutyCycle);
+    PWM_setDuty(pwm_left_handle, (uint32_t) (((uint64_t) PWM_DUTY_FRACTION_MAX * leftMotorDutyCycle) / 100));
+    PWM_setDuty(pwm_right_handle, (uint32_t) (((uint64_t) PWM_DUTY_FRACTION_MAX * rightMotorDutyCycle) / 100));
 
     putString("Robot has been stopped");
 }
@@ -305,11 +306,11 @@ void stop(){
 void highSpeed(){
     // Since we are simply increase speed the motors, we do not need to set the motor control directions
 
-    leftMotorDutyCycle = (uint32_t) (((uint64_t) PWM_DUTY_FRACTION_MAX * 100) / 100);  // set duty cycle to 100%
-    rightMotorDutyCycle = (uint32_t) (((uint64_t) PWM_DUTY_FRACTION_MAX * 100) / 100);  // set duty cycle to 100%
+    leftMotorDutyCycle = 100;  // set duty cycle to 100%
+    rightMotorDutyCycle = 100;  // set duty cycle to 100%
 
-    PWM_setDuty(pwm_left_handle, leftMotorDutyCycle);
-    PWM_setDuty(pwm_right_handle, rightMotorDutyCycle);
+    PWM_setDuty(pwm_left_handle, (uint32_t) (((uint64_t) PWM_DUTY_FRACTION_MAX * leftMotorDutyCycle) / 100));
+    PWM_setDuty(pwm_right_handle, (uint32_t) (((uint64_t) PWM_DUTY_FRACTION_MAX * rightMotorDutyCycle) / 100));
 
     putString("Robot is moving at High Speed");
 }
@@ -330,6 +331,100 @@ void rotateLeft(){
     GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN6); //Right Motor
 
     putString("Robot is rotating left");
+}
+
+void pid(){
+    int pid_error;
+    double kp = .25;
+    double ki = 0;
+    double kd = 0;
+
+    double p = 0;
+    double i = 0;
+    double d = 0;
+
+    uint32_t middle = 7400; // constant value representing distance from right when in desired middle of corridor
+    uint32_t rIRs;
+    int last_error = 0;
+    double pwm_pid;
+
+
+    const TickType_t xDelay = 50 / portTICK_PERIOD_MS;
+
+    while(1){
+        vTaskDelay( xDelay );// simulating a 50ms wait time
+
+        rightSensorRead();
+        rIRs = adcRightValue;
+
+        pid_error = middle-rIRs;
+
+        p = (kp*pid_error);
+        i = ki*(pid_error+last_error);
+        d = kd*(pid_error-last_error);
+
+        last_error = pid_error;
+        pwm_pid = p+i+d;
+
+        if(pid_error < 0){
+                    // Too close to the wall, needs to move left
+
+                    leftMotorDutyCycle -= pwm_pid;
+                    rightMotorDutyCycle = 37;
+
+                    PWM_setDuty(pwm_left_handle, (uint32_t) (((uint64_t) PWM_DUTY_FRACTION_MAX * leftMotorDutyCycle) / 100));
+                    PWM_setDuty(pwm_right_handle, (uint32_t) (((uint64_t) PWM_DUTY_FRACTION_MAX * rightMotorDutyCycle) / 100));
+
+                    // no need to set directions because will be moving forward already :)
+                    putString(" Too close to wall \n\r" );
+                }
+        else if(pid_error<=1500){
+            //no error, keep moving forward
+
+            leftMotorDutyCycle = 37;  // set duty cycle to 37%
+            rightMotorDutyCycle = 37;  // set duty cycle to 37%
+
+            PWM_setDuty(pwm_left_handle, (uint32_t) (((uint64_t) PWM_DUTY_FRACTION_MAX * leftMotorDutyCycle) / 100));
+            PWM_setDuty(pwm_right_handle, (uint32_t) (((uint64_t) PWM_DUTY_FRACTION_MAX * rightMotorDutyCycle) / 100));
+
+            putString("Keep moving forward \n\r");
+        }
+        else{
+            // Too far from the wall, needs to move right
+            // steer to right: slow down right motor and set left motor to 255 adjust
+
+            rightMotorDutyCycle -= pwm_pid;
+            leftMotorDutyCycle = 37;
+
+            PWM_setDuty(pwm_left_handle, (uint32_t) (((uint64_t) PWM_DUTY_FRACTION_MAX * leftMotorDutyCycle) / 100));
+            PWM_setDuty(pwm_right_handle, (uint32_t) (((uint64_t) PWM_DUTY_FRACTION_MAX * rightMotorDutyCycle) / 100));
+
+
+            // no need to set directions because will be moving forward already :)
+            putString(" Too far from wall \n\r" );
+        }
+
+
+//        ADCIntClear(ADC1_BASE, 2);
+//        ADCProcessorTrigger(ADC1_BASE, 2);
+//
+//        while(!ADCIntStatus(ADC1_BASE, 2, false)){
+//            //wait
+//        }
+//
+//        ADCSequenceDataGet(ADC1_BASE, 2, ui32ADC1Value);
+//
+//        if(ui32ADC1Value[0] >3900){
+//            stopMoving(0,0);
+//            putString(" Something in front \n\r" );
+//            rotateRight(0,0);
+//            Task_sleep(1000);
+//            stopMoving(0,0);
+//            moveForward(0,0);
+//        }
+    }
+
+
 }
 
 
