@@ -11,6 +11,7 @@
 extern void uartInit();
 extern void adcInit();
 extern void pwmInit();
+extern void timerInit();
 
 /* Writing to UART Functions */
 extern void getChar(char *val);
@@ -33,7 +34,11 @@ extern void stop();
 extern void highSpeed();
 extern void rotateRight();
 extern void rotateLeft();
-extern void pid();
 
+
+/* PWM Helper Functions */
+extern void pid();
+extern uint32_t calculateDutyCycle(uint32_t percent);
+extern void changeDutyCycle(uint32_t percent, uint8_t motor);
 
 #endif /* INITSUTILSCOMMANDS_H_ */
