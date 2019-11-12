@@ -54,6 +54,7 @@
 #include "uartThread.h"
 #include "initsUtilsCommands.h"
 #include "lightSensorThread.h"
+#include "printThread.h"
 
 /* Stack size in bytes */
 #define THREADSTACKSIZE    1024
@@ -76,6 +77,8 @@ int main(void)
     uartInit();
     adcInit();
     pwmInit();
+    timerInit();
+    semInit();
 
 
     /* Set priority and stack size attributes */
@@ -128,7 +131,19 @@ int main(void)
         /* pthread_create() failed */
         while (1);
     }
-    /* End of create L Thread*/
+    /* End of create Light Sensor Thread*/
+
+    /* Create print Thread with priority = 3 */
+    priParam.sched_priority = 3;
+
+    pthread_attr_setschedparam(&pAttrs, &priParam);
+    retc = pthread_create(&printThread_handler, &pAttrs, printThread, NULL);
+
+    if (retc != 0) {
+        /* pthread_create() failed */
+        while (1);
+    }
+    /* End of create Print Thread*/
 
 
     /* Start the FreeRTOS scheduler */

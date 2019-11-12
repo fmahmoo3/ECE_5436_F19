@@ -7,17 +7,21 @@
 #include <ti/drivers/Timer.h>
 #include <semaphore.h>
 
+
 /* Peripheral Init Functions */
 extern void uartInit();
 extern void adcInit();
 extern void pwmInit();
 extern void timerInit();
+extern void semInit();
+
 
 /* Writing to UART Functions */
 extern void getChar(char *val);
 extern void putChar(char *val);
 extern void putString(char *val);
 extern int length(char *a);
+
 
 /* Commands UART Functions */
 extern void commandsInit();
@@ -37,8 +41,22 @@ extern void rotateLeft();
 
 
 /* PWM Helper Functions */
-extern void pid();
 extern uint32_t calculateDutyCycle(uint32_t percent);
-extern void changeDutyCycle(uint32_t percent, uint8_t motor);
+extern void changeDutyCyclePercent(uint32_t percent, uint8_t motor);
+extern void changeDutyCycle(uint32_t val, uint8_t motor);
+
+
+/* PID Function */
+extern void pid();
+
+
+/* Ping Pong Functions */
+extern void thinLineStatusChange(int val);
+extern uint8_t mazeStarted();
+extern void thickLineStatusChange(int val);
+extern void saveToBuffer(int pid_error);
+extern void printBuff();
+extern sem_t semaHandlerReturn();
+
 
 #endif /* INITSUTILSCOMMANDS_H_ */

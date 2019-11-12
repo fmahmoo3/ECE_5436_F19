@@ -4,17 +4,8 @@
 // @versions {"data":"2019051709","timestamp":"2019051709","tool":"1.1.792","templates":"2019051709"}
 
 var RTOS = scripting.addModule("/ti/drivers/RTOS");
-var GPIO = scripting.addModule("/ti/drivers/GPIO");
-var GPIO1 = GPIO.addInstance();
-var GPIO2 = GPIO.addInstance();
-var GPIO3 = GPIO.addInstance();
 var UART = scripting.addModule("/ti/drivers/UART");
 var UART1 = UART.addInstance();
-var Timer = scripting.addModule("/ti/drivers/Timer");
-var Timer1 = Timer.addInstance();
-var Timer2 = Timer.addInstance();
-var Timer3 = Timer.addInstance();
-var Timer4 = Timer.addInstance();
 var PWM = scripting.addModule("/ti/drivers/PWM");
 var UART2 = UART.addInstance();
 var ADC = scripting.addModule("/ti/drivers/ADC");
@@ -22,10 +13,16 @@ var ADC1 = ADC.addInstance();
 var ADC2 = ADC.addInstance();
 var PWM1 = PWM.addInstance();
 var PWM2 = PWM.addInstance();
+var Timer = scripting.addModule("/ti/drivers/Timer");
+var Timer1 = Timer.addInstance();
 // Name
 RTOS.timer0.resource.$name = "MyTIMER_A1";
 // Use Peripheral
 RTOS.timer0.resource.$assign = "Timer_A0";
+// Use Hardware - Select the hardware to use, or 'none' to use available header pins
+UART1.$hardware = system.deviceData.board.components.XDS110UART;
+// Name - The C/C++ identifier used in applications as the index parameter passed to UART runtime APIs
+UART1.$name = "CONFIG_UART1";
 var Power = scripting.addModule("/ti/drivers/Power");
 // Name
 Power.performanceLevel3.$name = "ti_drivers_power_PowerMSP432PerfLevels0";
@@ -37,52 +34,8 @@ Power.performanceLevel1.$name = "ti_drivers_power_PowerMSP432PerfLevels2";
 Power.performanceLevel0.$name = "ti_drivers_power_PowerMSP432PerfLevels3";
 var Board = scripting.addModule("/ti/drivers/Board");
 var DriverLib = scripting.addModule("/ti/devices/DriverLib");
-// Use Hardware - Select the hardware to use, or 'none' to use available header pins
-GPIO1.$hardware = system.deviceData.board.components.S1;
-// Name - The C/C++ identifier used in applications as the index parameter passed to GPIO runtime APIs
-GPIO1.$name = "CONFIG_GPIO_BUTTON0";
-// Use Hardware - Select the hardware to use, or 'none' to use available header pins
-GPIO2.$hardware = system.deviceData.board.components.S2;
-// Name - The C/C++ identifier used in applications as the index parameter passed to GPIO runtime APIs
-GPIO2.$name = "CONFIG_GPIO_BUTTON1";
-// Use Hardware - Select the hardware to use, or 'none' to use available header pins
-GPIO3.$hardware = system.deviceData.board.components.LED1_RED;
-// Name - The C/C++ identifier used in applications as the index parameter passed to GPIO runtime APIs
-GPIO3.$name = "CONFIG_GPIO_LED0";
-// Use Hardware - Select the hardware to use, or 'none' to use available header pins
-UART1.$hardware = system.deviceData.board.components.XDS110UART;
-// Name - The C/C++ identifier used in applications as the index parameter passed to UART runtime APIs
-UART1.$name = "CONFIG_UART1";
 // Name
 UART1.uart.$name = "MyUART1";
-// Name - The C/C++ identifier used in applications as the index parameter passed to Timer runtime APIs
-Timer1.$name = "CONFIG_TIMER0";
-// Timer Type
-Timer1.timerType = "32 Bits";
-// Name
-Timer1.timer.$name = "MyTIMER321";
-// Use Peripheral
-Timer1.timer.$assign = "TIMER32_0";
-// Name - The C/C++ identifier used in applications as the index parameter passed to Timer runtime APIs
-Timer2.$name = "CONFIG_TIMER1";
-// Timer Type
-Timer2.timerType = "32 Bits";
-// Name
-Timer2.timer.$name = "MyTIMER321";
-// Use Peripheral
-Timer2.timer.$assign = "TIMER32_1";
-// Name - The C/C++ identifier used in applications as the index parameter passed to Timer runtime APIs
-Timer3.$name = "CONFIG_TIMER2";
-// Name
-Timer3.timer.$name = "MyTIMER_A1";
-// Use Peripheral
-Timer3.timer.$assign = "Timer_A2";
-// Name - The C/C++ identifier used in applications as the index parameter passed to Timer runtime APIs
-Timer4.$name = "CONFIG_TIMER3";
-// Name
-Timer4.timer.$name = "MyTIMER_A1";
-// Use Peripheral
-Timer4.timer.$assign = "Timer_A3";
 // Name - The C/C++ identifier used in applications as the index parameter passed to UART runtime APIs
 UART2.$name = "CONFIG_UART_BLUETOOTH";
 // Name
@@ -117,12 +70,10 @@ PWM2.$name = "CONFIG_PWM_RIGHT_MOTOR";
 PWM2.timer.$name = "MyTIMER_A1";
 // Assign pin
 PWM2.timer.pwmPin.$assign = "boosterpack.38"; // P2.4
-// Suggest solution
-GPIO1.gpioPin.$suggestSolution = "5";
-// Suggest solution
-GPIO2.gpioPin.$suggestSolution = "8";
-// Suggest solution
-GPIO3.gpioPin.$suggestSolution = "4";
+// Name - The C/C++ identifier used in applications as the index parameter passed to Timer runtime APIs
+Timer1.$name = "CONFIG_TIMER_PID";
+// Name
+Timer1.timer.$name = "MyTIMER_A1";
 // Suggest solution
 UART1.uart.$suggestSolution = "EUSCI_A0";
 // Suggest solution
@@ -137,3 +88,5 @@ ADC2.adc.$suggestSolution = "ADC14";
 PWM1.timer.$suggestSolution = "Timer_A1";
 // Suggest solution
 PWM2.timer.$suggestSolution = "Timer_A1";
+// Suggest solution
+Timer1.timer.$suggestSolution = "Timer_A2";

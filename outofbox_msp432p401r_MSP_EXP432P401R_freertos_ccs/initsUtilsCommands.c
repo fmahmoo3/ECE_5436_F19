@@ -27,19 +27,31 @@ ADC_Handle adc_right_handle;
 
 PWM_Handle pwm_left_handle;
 PWM_Handle pwm_right_handle;
-
-Timer_Handle timer_handle;
-
-const uint8_t MOTORMAXFREQUENCY = 4;
+const uint32_t MOTORMAXPERIOD = 10000;
 const uint8_t left = 0;
 const uint8_t right = 1;
 uint32_t leftMotorDutyCycle;
 uint32_t rightMotorDutyCycle;
 
+Timer_Handle timer_handle;
+int timeThroughMaze;
+char str[50];
 
 uint16_t adcFrontValue;
 uint16_t adcRightValue;
 void (*lookUpTable[26][26])() = {{NULL}};
+
+sem_t sema;
+
+uint8_t thinLineStatus = 0;
+uint8_t thickLineStatus = 0;
+uint8_t mazeStartedStatus = 0;
+uint8_t saveValue = 0;
+uint8_t useBuff = 0;
+int buff0[20];
+uint8_t buff0Index = 0;
+int buff1[20];
+uint8_t buff1Index = 0;
 
 
 /*
@@ -108,8 +120,8 @@ void pwmInit(){
     // Initialize the PWM parameters
     PWM_Params_init(&pwmParams);
     pwmParams.idleLevel = PWM_IDLE_LOW;         // Output low when PWM is not running
-    pwmParams.periodUnits = PWM_PERIOD_US;      // Period is in Hz
-    pwmParams.periodValue = MOTORMAXFREQUENCY;  // 4us
+    pwmParams.periodUnits = PWM_PERIOD_US;      // Period is in us
+    pwmParams.periodValue = MOTORMAXPERIOD;
     pwmParams.dutyUnits = PWM_DUTY_US;    // Duty is in fractional percentage
     pwmParams.dutyValue = 0;                    // 0% initial duty cycle
 
@@ -135,16 +147,29 @@ void pwmInit(){
 
 void timerInit(){
     Timer_Params params;
+    Timer_init();
 
     // Initialize Timer parameters
     Timer_Params_init(&params);
     params.periodUnits = Timer_PERIOD_US;
-    params.period = 50000;
+    params.period = 50000; // 50000 us = 50 ms
     params.timerMode  = Timer_CONTINUOUS_CALLBACK;
     params.timerCallback = pid;
 
     // Open Timer instance
-    timer_handle = Timer_open(CONFIG_TIMER0, &params);
+    timer_handle = Timer_open(CONFIG_TIMER_PID, &params);
+    if (timer_handle == NULL) {
+        // Timer_open() failed
+        while (1);
+    }
+}
+
+void semInit(){
+    int retc = 0;
+    retc = sem_init(&sema, 0, 0);
+    if (retc == -1) {
+        while (1);
+    }
 }
 
 /*
@@ -175,6 +200,7 @@ int length(char *a) {
     }
     return i;
 }
+
 
 /*
  *
@@ -221,38 +247,38 @@ void runCommand(char a, char b){
 
 void toggleRed(){
     GPIO_toggleOutputOnPin(GPIO_PORT_P2, GPIO_PIN0);
-    putString("Red LED was Toggled");
-
-    if(GPIO_getInputPinValue(GPIO_PORT_P2, GPIO_PIN0) == GPIO_INPUT_PIN_HIGH){
-        putString(" HIGH");
-    }
-    else{
-        putString(" LOW");
-    }
+//    putString("Red LED was Toggled");
+//
+//    if(GPIO_getInputPinValue(GPIO_PORT_P2, GPIO_PIN0) == GPIO_INPUT_PIN_HIGH){
+//        putString(" HIGH");
+//    }
+//    else{
+//        putString(" LOW");
+//    }
 }
 
 void toggleGreen(){
     GPIO_toggleOutputOnPin(GPIO_PORT_P2, GPIO_PIN1);
-    putString("Green LED was Toggled");
-
-    if(GPIO_getInputPinValue(GPIO_PORT_P2, GPIO_PIN1) == GPIO_INPUT_PIN_HIGH){
-        putString(" HIGH");
-    }
-    else{
-        putString(" LOW");
-    }
+//    putString("Green LED was Toggled");
+//
+//    if(GPIO_getInputPinValue(GPIO_PORT_P2, GPIO_PIN1) == GPIO_INPUT_PIN_HIGH){
+//        putString(" HIGH");
+//    }
+//    else{
+//        putString(" LOW");
+//    }
 }
 
 void toggleBlue(){
     GPIO_toggleOutputOnPin(GPIO_PORT_P2, GPIO_PIN2);
-    putString("Blue LED was Toggled ");
-
-    if(GPIO_getInputPinValue(GPIO_PORT_P2, GPIO_PIN2) == GPIO_INPUT_PIN_HIGH){
-        putString("HIGH");
-    }
-    else{
-        putString("LOW");
-    }
+//    putString("Blue LED was Toggled ");
+//
+//    if(GPIO_getInputPinValue(GPIO_PORT_P2, GPIO_PIN2) == GPIO_INPUT_PIN_HIGH){
+//        putString("HIGH");
+//    }
+//    else{
+//        putString("LOW");
+//    }
 }
 
 void frontSensorRead(){
@@ -283,23 +309,19 @@ void rightSensorRead(){
     }
 }
 
-void start(){
-    //will start Maze
-
-    //setup timer for pid
-    timerInit();
-
-}
-
 void forwards(){
     //Initialize Motor so robot moves in forward direction
     GPIO_setOutputLowOnPin(GPIO_PORT_P3, GPIO_PIN6); //Left Motor
     GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN6); //Right Motor
 
-    changeDutyCycle(75, left);
-    changeDutyCycle(75, right);
+    changeDutyCyclePercent(100, left);
+    changeDutyCyclePercent(100, right);
 
-    putString("Robot is moving forwards");
+    putString("Robot is starting maze");
+
+    timeThroughMaze = 0;
+    mazeStartedStatus = 1;
+    Timer_start(timer_handle);
 }
 
 void backwards(){
@@ -307,10 +329,10 @@ void backwards(){
     GPIO_setOutputHighOnPin(GPIO_PORT_P3, GPIO_PIN6); //Left Motor
     GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN6); //Right Motor
 
-    changeDutyCycle(75, left);
-    changeDutyCycle(75, right);
+    changeDutyCyclePercent(75, left);
+    changeDutyCyclePercent(75, right);
 
-    putString("Robot is moving backwards");
+//    putString("Robot is moving backwards");
 }
 
 void stop(){
@@ -319,19 +341,25 @@ void stop(){
     leftMotorDutyCycle = 0;  // set duty cycle to 0%
     rightMotorDutyCycle = 0;  // set duty cycle to 0%
 
-    changeDutyCycle(0, left);
-    changeDutyCycle(0, right);
+    changeDutyCyclePercent(0, left);
+    changeDutyCyclePercent(0, right);
 
     putString("Robot has been stopped");
+
+    mazeStartedStatus = 0;
+
+    sprintf(str, "\n\r%d seconds\n\r", timeThroughMaze/1000);
+    putString(str);
+    Timer_stop(timer_handle);
 }
 
 void highSpeed(){
     // Since we are simply increase speed the motors, we do not need to set the motor control directions
 
-    changeDutyCycle(100, left);
-    changeDutyCycle(100, right);
+    changeDutyCyclePercent(100, left);
+    changeDutyCyclePercent(100, right);
 
-    putString("Robot is moving at High Speed");
+//    putString("Robot is moving at High Speed");
 }
 
 void rotateRight(){
@@ -340,7 +368,7 @@ void rotateRight(){
     GPIO_setOutputLowOnPin(GPIO_PORT_P3, GPIO_PIN6); //Left Motor
     GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN6); //Right Motor
 
-    putString("Robot is rotating right");
+//    putString("Robot is rotating right");
 }
 
 void rotateLeft(){
@@ -349,7 +377,7 @@ void rotateLeft(){
     GPIO_setOutputHighOnPin(GPIO_PORT_P3, GPIO_PIN6); //Left Motor
     GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN6); //Right Motor
 
-    putString("Robot is rotating left");
+//    putString("Robot is rotating left");
 }
 
 /*
@@ -360,10 +388,10 @@ void rotateLeft(){
  *
  */
 uint32_t calculateDutyCycle(uint32_t percent){
-    return MOTORMAXFREQUENCY * percent / 100;
+    return MOTORMAXPERIOD * percent / 100;
 }
 
-void changeDutyCycle(uint32_t percent, uint8_t motor){
+void changeDutyCyclePercent(uint32_t percent, uint8_t motor){
     if(motor == right){
         rightMotorDutyCycle = calculateDutyCycle(percent);
         PWM_setDuty(pwm_right_handle, rightMotorDutyCycle);
@@ -374,77 +402,188 @@ void changeDutyCycle(uint32_t percent, uint8_t motor){
     }
 }
 
+void changeDutyCycle(uint32_t val, uint8_t motor){
+    if(motor == right){
+        if(val<=2000)
+            rightMotorDutyCycle = 2000;
+        else if(val<=MOTORMAXPERIOD)
+            rightMotorDutyCycle = val;
+        else
+            rightMotorDutyCycle = MOTORMAXPERIOD;
+
+        PWM_setDuty(pwm_right_handle, rightMotorDutyCycle);
+    }
+    else{
+        if(val<=2000)
+            leftMotorDutyCycle = 2000;
+        else if(val<=MOTORMAXPERIOD)
+            leftMotorDutyCycle = val;
+        else
+            leftMotorDutyCycle = MOTORMAXPERIOD;
+
+        PWM_setDuty(pwm_left_handle, leftMotorDutyCycle);
+    }
+}
+
+/*
+ *
+ *
+ * PID Function
+ *
+ *
+ */
+int pid_error;
+double kp = 2;
+double ki = .5;
+double kd = 0;
+
+double p = 0;
+double i = 0;
+double d = 0;
+
+uint32_t middle = 7600;
+uint32_t thresholdFront = 7000;
+uint32_t thresholdRight = 5000;
+int last_error = 0;
+double u;
+
 void pid(){
-    int pid_error;
-    double kp = .25;
-    double ki = 0;
-    double kd = 0;
+    ADC_convert(adc_right_handle, &adcRightValue);
+    ADC_convert(adc_front_handle, &adcFrontValue);
 
-    double p = 0;
-    double i = 0;
-    double d = 0;
+    if(adcFrontValue >= thresholdFront && adcRightValue >= thresholdRight){
+        //Rotate Left
+        GPIO_setOutputHighOnPin(GPIO_PORT_P3, GPIO_PIN6); //Left Motor
+        GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN6); //Right Motor
 
-    uint32_t middle = 7600; // constant value representing distance from right when in desired middle of corridor
-    int last_error = 0;
-    double u;
+        changeDutyCycle(MOTORMAXPERIOD, right);
+        changeDutyCycle(MOTORMAXPERIOD, left);
 
-
-    uint32_t ldc = (uint32_t) (((uint64_t) PWM_DUTY_FRACTION_MAX * leftMotorDutyCycle) / 100);
-    uint32_t rdc = (uint32_t) ( ((uint64_t) PWM_DUTY_FRACTION_MAX) / 100 );
-
-    const TickType_t xDelay = 50 / portTICK_PERIOD_MS;
-
-    while(1){
-        vTaskDelay( xDelay );// simulating a 50ms wait time
-
-        ADC_convert(adc_right_handle, &adcRightValue);
-        pid_error = middle-adcRightValue;
-
-        p = (kp*pid_error);
-        i = ki*(pid_error+last_error);
-        d = kd*(pid_error-last_error);
-
-        u = p+i+d;
-
-        if(u<0){
-            //turn left
-
-            if(ldc-u == 0 || rdc+u == 250000){
-            }
-            else{
-                ldc -= u;
-                rdc += u;
-
-                PWM_setDuty(pwm_left_handle, ldc);
-                PWM_setDuty(pwm_right_handle, ldc);
-            }
-
-
-            putString("too close \n\r");
+        while(adcFrontValue >= 5000){
+            ADC_convert(adc_front_handle, &adcFrontValue);
         }
-        else if(u>0){
-            //turn right
-            if(rdc-u == 0 || ldc+u == 250000){
-            }
-            else{
-                ldc += u;
-                rdc -= u;
-
-                PWM_setDuty(pwm_left_handle, ldc);
-                PWM_setDuty(pwm_right_handle, ldc);
-            }
-
-            putString("too far \n\r");
-        }
-        else{
-            // do nothing
-
-            putString("just right! \n\r");
-        }
-
-
     }
 
+
+    //Initialize Motor so robot moves in forward direction
+    GPIO_setOutputLowOnPin(GPIO_PORT_P3, GPIO_PIN6); //Left Motor
+    GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN6); //Right Motor
+
+    ADC_convert(adc_right_handle, &adcRightValue);
+
+    pid_error = middle-adcRightValue;
+
+    if(pid_error<=300 && pid_error>=-300){
+        pid_error = 0;
+    }
+
+    p = (kp*pid_error);
+    i = ki*(pid_error+last_error);
+    d = kd*(pid_error-last_error);
+
+    u = p+i+d;
+
+    last_error = pid_error;
+
+    if(u<0){
+        changeDutyCycle(MOTORMAXPERIOD - abs(u), left);
+        changeDutyCycle(MOTORMAXPERIOD, right);
+
+        //putString("too close \n\r");
+    }
+    else if(u>0){
+        changeDutyCycle(MOTORMAXPERIOD, left);
+        changeDutyCycle(MOTORMAXPERIOD - u, right);
+
+        //putString("too far \n\r");
+    }
+    else{
+        changeDutyCycle(MOTORMAXPERIOD, left);
+        changeDutyCycle(MOTORMAXPERIOD, right);
+
+        //putString("just right! \n\r");
+    }
+
+    timeThroughMaze+=50;
+    saveToBuffer(pid_error);
+}
+
+/*
+ *
+ *
+ * Ping Pong Functions
+ *
+ *
+ */
+
+void thinLineStatusChange(int val){
+    thinLineStatus = val;
+}
+
+void thickLineStatusChange(int val){
+    thickLineStatus = val;
+}
+
+uint8_t mazeStarted(){
+    return mazeStartedStatus;
+}
+
+void saveToBuffer(int pid_error){
+    if(saveValue == 1){
+        if(useBuff == 0){
+            //Use buff0
+            buff0[buff0Index++] = pid_error;
+        }
+        else{
+            //Use buff1
+            buff1[buff1Index++] = pid_error;
+        }
+
+        if(useBuff == 0 && buff0Index == 20){
+            useBuff = 1;
+            buff0Index = 0;
+            //Signal to print buff0
+            sem_post(&sema);
+        }
+
+        if(useBuff == 1 && buff1Index == 20){
+            useBuff = 0;
+            buff1Index = 0;
+            //Signal to print buff1
+            sem_post(&sema);
+        }
+
+
+        saveValue = 0;
+    }
+    else{
+        saveValue = 1;
+    }
+}
+
+void printBuff(){
+    putString("\n\n\r");
+    int k;
+    if(useBuff == 1){ // saving to buff1 so print buff0
+        for(k = 0; k<20; k++){
+            toggleGreen();
+            vTaskDelay( 10 / portTICK_PERIOD_MS );
+            sprintf(str,"%d\n\r",buff0[k]);
+            putString(str);
+        }
+    }
+    else{
+        for(k = 0; k<20; k++){
+            toggleGreen();
+            vTaskDelay( 10 / portTICK_PERIOD_MS );
+            sprintf(str,"%d\n\r",buff1[k]);
+            putString(str);
+        }
+    }
+}
+
+sem_t semaHandlerReturn(){
+    return sema;
 }
 
 
