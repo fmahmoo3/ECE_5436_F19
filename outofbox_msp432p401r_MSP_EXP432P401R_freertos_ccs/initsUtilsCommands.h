@@ -32,7 +32,7 @@ extern void toggleGreen();
 extern void toggleBlue();
 extern void rightSensorRead();
 extern void frontSensorRead();
-extern void forwards();
+extern void start();
 extern void backwards();
 extern void stop();
 extern void highSpeed();

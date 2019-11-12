@@ -505,7 +505,9 @@ void pid(){
     }
 
     timeThroughMaze+=50;
-    saveToBuffer(pid_error);
+    if(thinLineStatus == 1){
+        saveToBuffer(pid_error);
+    }
 }
 
 /*
