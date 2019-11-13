@@ -18,10 +18,10 @@ void *printThread(void *arg0){
     sema = semaHandlerReturn();
 
     while(1){
-        toggleBlue(); // Turns it on if off, which it should be
         sem_wait(&sema);
         toggleBlue();// Turns it off if on, which it should be
         printBuff();
+        toggleBlue();
     }
 }
 

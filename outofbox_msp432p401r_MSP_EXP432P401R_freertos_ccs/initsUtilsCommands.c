@@ -20,11 +20,19 @@
 #include "initsUtilsCommands.h"
 
 /* Global Variables */
+char str[25]; // used to print numbers
+
+
+/* Handle to write to UART */
 UART_Handle uart_handle;
 
+
+/* Handle to read ADC Value */
 ADC_Handle adc_front_handle;
 ADC_Handle adc_right_handle;
 
+
+/* PWM Variables */
 PWM_Handle pwm_left_handle;
 PWM_Handle pwm_right_handle;
 const uint32_t MOTORMAXPERIOD = 10000;
@@ -33,16 +41,20 @@ const uint8_t right = 1;
 uint32_t leftMotorDutyCycle;
 uint32_t rightMotorDutyCycle;
 
+
+/* Timer Variables */
 Timer_Handle timer_handle;
 int timeThroughMaze;
-char str[50];
 
+
+/*  */
 uint16_t adcFrontValue;
 uint16_t adcRightValue;
 void (*lookUpTable[26][26])() = {{NULL}};
 
-sem_t sema;
 
+/* Maze Started variables */
+sem_t sema;
 uint8_t thinLineStatus = 0;
 uint8_t thickLineStatus = 0;
 uint8_t mazeStartedStatus = 0;
@@ -52,6 +64,10 @@ int buff0[20];
 uint8_t buff0Index = 0;
 int buff1[20];
 uint8_t buff1Index = 0;
+
+
+
+
 
 
 /*
@@ -172,6 +188,10 @@ void semInit(){
     }
 }
 
+
+
+
+
 /*
  *
  *
@@ -202,6 +222,9 @@ int length(char *a) {
 }
 
 
+
+
+
 /*
  *
  *
@@ -224,12 +247,16 @@ void commandsInit(){
     lookUpTable['t'-'a']['b'-'a'] = &toggleBlue; //tb; toggle blue led
     lookUpTable['d'-'a']['f'-'a'] = &frontSensorRead; //df; distance sensor front read
     lookUpTable['d'-'a']['r'-'a'] = &rightSensorRead; //dr; distance sensor right read
-    lookUpTable['g'-'a']['o'-'a'] = &forwards; //go; runs both motors in robots forward direction
+    lookUpTable['g'-'a']['o'-'a'] = &start; //go; runs both motors in robots forward direction
     lookUpTable['r'-'a']['e'-'a'] = &backwards; //re; runs both motors in robots backwards direction
     lookUpTable['s'-'a']['t'-'a'] = &stop; //st; turn motors off
     lookUpTable['h'-'a']['s'-'a'] = &highSpeed; //hs; increase duty cycle to 100%, no specific direction
     lookUpTable['r'-'a']['r'-'a'] = &rotateRight; //rr; rotates robot towards right, no specific speed
     lookUpTable['r'-'a']['l'-'a'] = &rotateLeft; //rl; rotates robot towards left, no specific speed
+//    lookUpTable['i'-'a']['p'-'a'] = &increaseKp; //ip; increases kp by .2
+//    lookUpTable['d'-'a']['p'-'a'] = &decreaseKp; //dp; decreases kp by .2
+//    lookUpTable['i'-'a']['i'-'a'] = &increaseKi; //ii; increases ki by .2
+//    lookUpTable['d'-'a']['i'-'a'] = &decreaseKi; //di; decreases ki by .2
 }
 
 int commandUnderstood(char a, char b){
@@ -289,7 +316,6 @@ void frontSensorRead(){
     }
     else{
         putString("Front Distance Sensor Reading is ");
-        char str[10];
         sprintf(str,"%u",adcFrontValue);
         putString(&str);
     }
@@ -303,13 +329,12 @@ void rightSensorRead(){
     }
     else{
         putString("Right Distance Sensor Reading is ");
-        char str[10];
         sprintf(str,"%u",adcRightValue);
         putString(&str);
     }
 }
 
-void forwards(){
+void start(){
     //Initialize Motor so robot moves in forward direction
     GPIO_setOutputLowOnPin(GPIO_PORT_P3, GPIO_PIN6); //Left Motor
     GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN6); //Right Motor
@@ -321,6 +346,13 @@ void forwards(){
 
     timeThroughMaze = 0;
     mazeStartedStatus = 1;
+    thinLineStatus = 0;
+    thickLineStatus = 0;
+    saveValue = 0;
+    useBuff = 0;
+    buff0Index = 0;
+    buff1Index = 0;
+
     Timer_start(timer_handle);
 }
 
@@ -380,6 +412,10 @@ void rotateLeft(){
 //    putString("Robot is rotating left");
 }
 
+
+
+
+
 /*
  *
  *
@@ -425,16 +461,20 @@ void changeDutyCycle(uint32_t val, uint8_t motor){
     }
 }
 
+
+
+
+
 /*
  *
  *
- * PID Function
+ * PID Functions
  *
  *
  */
 int pid_error;
-double kp = 2;
-double ki = .5;
+double kp = 2.5;
+double ki = .85;
 double kd = 0;
 
 double p = 0;
@@ -504,11 +544,38 @@ void pid(){
         //putString("just right! \n\r");
     }
 
-    timeThroughMaze+=50;
+    timeThroughMaze += 50;
     if(thinLineStatus == 1){
         saveToBuffer(pid_error);
     }
 }
+
+
+//void increaseKp(){
+//    kp += .2;
+//    sprintf(str, "kp: %lf\n\r", kp);
+//    putString(str);
+//}
+//
+//void decreaseKp(){
+//    kp -= .2;
+//    sprintf(str, "kp: %lf\n\r", kp);
+//    putString(str);
+//}
+//
+//void increaseKi(){
+//    ki += .2;
+//    sprintf(str, "ki: %lf\n\r", ki);
+//    putString(str);
+//}
+//
+//void decreaseKi(){
+//    ki -= .2;
+//    sprintf(str, "ki: %lf\n\r", ki);
+//    putString(str);
+//}
+
+
 
 /*
  *
@@ -569,17 +636,21 @@ void printBuff(){
     if(useBuff == 1){ // saving to buff1 so print buff0
         for(k = 0; k<20; k++){
             toggleGreen();
-            vTaskDelay( 10 / portTICK_PERIOD_MS );
             sprintf(str,"%d\n\r",buff0[k]);
             putString(str);
+
+            vTaskDelay( 65 / portTICK_PERIOD_MS );
+            toggleGreen();
         }
     }
     else{
         for(k = 0; k<20; k++){
             toggleGreen();
-            vTaskDelay( 10 / portTICK_PERIOD_MS );
             sprintf(str,"%d\n\r",buff1[k]);
             putString(str);
+
+            vTaskDelay( 65 / portTICK_PERIOD_MS );
+            toggleGreen();
         }
     }
 }

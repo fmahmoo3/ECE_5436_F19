@@ -48,6 +48,10 @@ extern void changeDutyCycle(uint32_t val, uint8_t motor);
 
 /* PID Function */
 extern void pid();
+//extern void increaseKp();
+//extern void decreaseKp();
+//extern void increaseKi();
+//extern void decreaseKi();
 
 
 /* Ping Pong Functions */

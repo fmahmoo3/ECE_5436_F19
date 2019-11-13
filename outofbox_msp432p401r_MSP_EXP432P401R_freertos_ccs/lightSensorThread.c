@@ -35,18 +35,16 @@ void *lightSensorThread(void *arg0) {
         }
 
         if(decay >= threshold) {
-//           GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN1); // Green LED ON
            countOverBlackLine++;
         }
         else {
-//           GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN1); // Green LED OFF
-
            if(countOverBlackLine >= 8 && mazeStarted() == 1){
                thickLineStatusChange(1);
                stop();
            }
            else if(countOverBlackLine > 1 && mazeStarted() == 1){
                thinLineStatusChange(1);
+               toggleBlue();
            }
 
            countOverBlackLine = 0;
