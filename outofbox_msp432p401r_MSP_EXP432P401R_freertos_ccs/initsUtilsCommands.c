@@ -380,7 +380,7 @@ void stop(){
 
     mazeStartedStatus = 0;
 
-    sprintf(str, "\n\r%d seconds\n\r", timeThroughMaze/1000);
+    sprintf(str, "\n\r%lf seconds\n\r", (double) timeThroughMaze/1000);
     putString(str);
     Timer_stop(timer_handle);
 }
@@ -633,24 +633,26 @@ void saveToBuffer(int pid_error){
 void printBuff(){
     putString("\n\n\r");
     int k;
+    toggleGreen();
     if(useBuff == 1){ // saving to buff1 so print buff0
         for(k = 0; k<20; k++){
-            toggleGreen();
+            if(k%5 == 0){
+                toggleGreen();
+            }
+
             sprintf(str,"%d\n\r",buff0[k]);
             putString(str);
-
-            vTaskDelay( 65 / portTICK_PERIOD_MS );
-            toggleGreen();
         }
     }
     else{
         for(k = 0; k<20; k++){
+            if(k%5 == 0){
+                toggleGreen();
+            }
+
             toggleGreen();
             sprintf(str,"%d\n\r",buff1[k]);
             putString(str);
-
-            vTaskDelay( 65 / portTICK_PERIOD_MS );
-            toggleGreen();
         }
     }
 }
