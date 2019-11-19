@@ -119,8 +119,8 @@ int main(void)
     }
     /* End of create UART Thread*/
 
-    /* Create Light Sensor Thread with priority = 2 */
-    priParam.sched_priority = 2;
+    /* Create Light Sensor Thread with priority = 3 */
+    priParam.sched_priority = 3;
 
     pthread_attr_setschedparam(&pAttrs, &priParam);
     retc = pthread_create(&lightSensorThread_handler, &pAttrs, lightSensorThread, NULL);
@@ -131,8 +131,8 @@ int main(void)
     }
     /* End of create Light Sensor Thread*/
 
-    /* Create print Thread with priority = 3 */
-    priParam.sched_priority = 3;
+    /* Create print Thread with priority = 2 */
+    priParam.sched_priority = 2;
 
     pthread_attr_setschedparam(&pAttrs, &priParam);
     retc = pthread_create(&printThread_handler, &pAttrs, printThread, NULL);

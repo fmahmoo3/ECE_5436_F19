@@ -16,7 +16,6 @@ pthread_t lightSensorThread_handler;   // used in main_freertos.c to latch on to
 void *lightSensorThread(void *arg0) {
     int threshold = 1500;
     int decay = 0;
-//    GPIO_setAsOutputPin(GPIO_PORT_P2, GPIO_PIN3);
 
     int k;
     int countOverBlackLine = 0;

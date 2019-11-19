@@ -19,9 +19,11 @@ void *printThread(void *arg0){
 
     while(1){
         sem_wait(&sema);
-        toggleBlue();// Turns it off if on, which it should be
+        GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN2);// turn off LED Blue
+        GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN1);// turn on LED Green
         printBuff();
-        toggleBlue();
+        GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN1);// turn off LED Green
+        GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN2);// turn on LED Blue
     }
 }
 

@@ -56,9 +56,9 @@ uint16_t adcRightValue;
 
 /* PID Variables */
 int pid_error;
-double kp = 2.5;
-double ki = .85;
-double kd = 0;
+double kp = 1.4;
+double ki = .8;
+double kd = 1.4;
 
 double p = 0;
 double i = 0;
@@ -274,8 +274,8 @@ void commandsInit(){
     lookUpTable['d'-'a']['p'-'a'] = &decreaseKp; //dp; decreases kp by .2
     lookUpTable['i'-'a']['i'-'a'] = &increaseKi; //ii; increases ki by .2
     lookUpTable['d'-'a']['i'-'a'] = &decreaseKi; //di; decreases ki by .2
-    lookUpTable['i'-'a']['d'-'a'] = &increaseKi; //id; increases kd by .2
-    lookUpTable['d'-'a']['d'-'a'] = &decreaseKi; //dd; decreases kd by .2
+    lookUpTable['i'-'a']['d'-'a'] = &increaseKd; //id; increases kd by .2
+    lookUpTable['d'-'a']['d'-'a'] = &decreaseKd; //dd; decreases kd by .2
 }
 
 int commandUnderstood(char a, char b){
@@ -643,26 +643,20 @@ void saveToBuffer(int pid_error){
 void printBuff(){
     putString("\n\n\r");
     int k;
-    toggleGreen();
     if(useBuff == 1){ // saving to buff1 so print buff0
         for(k = 0; k<20; k++){
-            if(k%5 == 0){
-                toggleGreen();
-            }
-
             sprintf(str,"%d\n\r",buff0[k]);
             putString(str);
+
+            vTaskDelay( 10 / portTICK_PERIOD_MS );
         }
     }
     else{
         for(k = 0; k<20; k++){
-            if(k%5 == 0){
-                toggleGreen();
-            }
-
-            toggleGreen();
             sprintf(str,"%d\n\r",buff1[k]);
             putString(str);
+
+            vTaskDelay( 10 / portTICK_PERIOD_MS );
         }
     }
 }
