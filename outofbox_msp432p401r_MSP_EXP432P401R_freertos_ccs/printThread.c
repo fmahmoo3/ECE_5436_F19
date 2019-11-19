@@ -20,7 +20,7 @@ void *printThread(void *arg0){
     while(1){
         sem_wait(&sema);
         toggleBlue();// Turns it off if on, which it should be
-//        printBuff();
+        printBuff();
         toggleBlue();
     }
 }
