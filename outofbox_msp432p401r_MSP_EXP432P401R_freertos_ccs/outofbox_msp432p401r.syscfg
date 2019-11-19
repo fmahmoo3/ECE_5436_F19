@@ -15,10 +15,8 @@ var PWM1 = PWM.addInstance();
 var PWM2 = PWM.addInstance();
 var Timer = scripting.addModule("/ti/drivers/Timer");
 var Timer1 = Timer.addInstance();
-// Name
-RTOS.timer0.resource.$name = "MyTIMER_A1";
-// Use Peripheral
-RTOS.timer0.resource.$assign = "Timer_A0";
+// name - Select the RTOS being used
+RTOS.name = "FreeRTOS";
 // Use Hardware - Select the hardware to use, or 'none' to use available header pins
 UART1.$hardware = system.deviceData.board.components.XDS110UART;
 // Name - The C/C++ identifier used in applications as the index parameter passed to UART runtime APIs
@@ -89,4 +87,4 @@ PWM1.timer.$suggestSolution = "Timer_A1";
 // Suggest solution
 PWM2.timer.$suggestSolution = "Timer_A1";
 // Suggest solution
-Timer1.timer.$suggestSolution = "Timer_A2";
+Timer1.timer.$suggestSolution = "Timer_A0";

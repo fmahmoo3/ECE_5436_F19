@@ -47,11 +47,28 @@ Timer_Handle timer_handle;
 int timeThroughMaze;
 
 
-/*  */
-uint16_t adcFrontValue;
-uint16_t adcRightValue;
+/* Look Up Table for commands from UART */
 void (*lookUpTable[26][26])() = {{NULL}};
 
+/* ADC Variables */
+uint16_t adcFrontValue;
+uint16_t adcRightValue;
+
+/* PID Variables */
+int pid_error;
+double kp = 2.5;
+double ki = .85;
+double kd = 0;
+
+double p = 0;
+double i = 0;
+double d = 0;
+
+uint32_t middle = 7600;
+uint32_t thresholdFront = 7000;
+uint32_t thresholdRight = 5000;
+int last_error = 0;
+double u;
 
 /* Maze Started variables */
 sem_t sema;
@@ -253,10 +270,12 @@ void commandsInit(){
     lookUpTable['h'-'a']['s'-'a'] = &highSpeed; //hs; increase duty cycle to 100%, no specific direction
     lookUpTable['r'-'a']['r'-'a'] = &rotateRight; //rr; rotates robot towards right, no specific speed
     lookUpTable['r'-'a']['l'-'a'] = &rotateLeft; //rl; rotates robot towards left, no specific speed
-//    lookUpTable['i'-'a']['p'-'a'] = &increaseKp; //ip; increases kp by .2
-//    lookUpTable['d'-'a']['p'-'a'] = &decreaseKp; //dp; decreases kp by .2
-//    lookUpTable['i'-'a']['i'-'a'] = &increaseKi; //ii; increases ki by .2
-//    lookUpTable['d'-'a']['i'-'a'] = &decreaseKi; //di; decreases ki by .2
+    lookUpTable['i'-'a']['p'-'a'] = &increaseKp; //ip; increases kp by .2
+    lookUpTable['d'-'a']['p'-'a'] = &decreaseKp; //dp; decreases kp by .2
+    lookUpTable['i'-'a']['i'-'a'] = &increaseKi; //ii; increases ki by .2
+    lookUpTable['d'-'a']['i'-'a'] = &decreaseKi; //di; decreases ki by .2
+    lookUpTable['i'-'a']['d'-'a'] = &increaseKi; //id; increases kd by .2
+    lookUpTable['d'-'a']['d'-'a'] = &decreaseKi; //dd; decreases kd by .2
 }
 
 int commandUnderstood(char a, char b){
@@ -317,7 +336,7 @@ void frontSensorRead(){
     else{
         putString("Front Distance Sensor Reading is ");
         sprintf(str,"%u",adcFrontValue);
-        putString(&str);
+        putString(str);
     }
 }
 
@@ -330,7 +349,7 @@ void rightSensorRead(){
     else{
         putString("Right Distance Sensor Reading is ");
         sprintf(str,"%u",adcRightValue);
-        putString(&str);
+        putString(str);
     }
 }
 
@@ -369,12 +388,10 @@ void backwards(){
 
 void stop(){
     // Since we are stopping the motors, we do not need to set the motor control directions
-
-    leftMotorDutyCycle = 0;  // set duty cycle to 0%
-    rightMotorDutyCycle = 0;  // set duty cycle to 0%
-
     changeDutyCyclePercent(0, left);
     changeDutyCyclePercent(0, right);
+
+    Timer_stop(timer_handle);
 
     putString("Robot has been stopped");
 
@@ -382,7 +399,12 @@ void stop(){
 
     sprintf(str, "\n\r%lf seconds\n\r", (double) timeThroughMaze/1000);
     putString(str);
-    Timer_stop(timer_handle);
+    sprintf(str, "kp: %lf\n\r", kp);
+    putString(str);
+    sprintf(str, "ki: %lf\n\r", ki);
+    putString(str);
+    sprintf(str, "kd: %lf\n\r", kd);
+    putString(str);
 }
 
 void highSpeed(){
@@ -440,8 +462,8 @@ void changeDutyCyclePercent(uint32_t percent, uint8_t motor){
 
 void changeDutyCycle(uint32_t val, uint8_t motor){
     if(motor == right){
-        if(val<=2000)
-            rightMotorDutyCycle = 2000;
+        if(val<=0)
+            rightMotorDutyCycle = 0;
         else if(val<=MOTORMAXPERIOD)
             rightMotorDutyCycle = val;
         else
@@ -450,8 +472,8 @@ void changeDutyCycle(uint32_t val, uint8_t motor){
         PWM_setDuty(pwm_right_handle, rightMotorDutyCycle);
     }
     else{
-        if(val<=2000)
-            leftMotorDutyCycle = 2000;
+        if(val<=0)
+            leftMotorDutyCycle = 0;
         else if(val<=MOTORMAXPERIOD)
             leftMotorDutyCycle = val;
         else
@@ -472,20 +494,6 @@ void changeDutyCycle(uint32_t val, uint8_t motor){
  *
  *
  */
-int pid_error;
-double kp = 2.5;
-double ki = .85;
-double kd = 0;
-
-double p = 0;
-double i = 0;
-double d = 0;
-
-uint32_t middle = 7600;
-uint32_t thresholdFront = 7000;
-uint32_t thresholdRight = 5000;
-int last_error = 0;
-double u;
 
 void pid(){
     ADC_convert(adc_right_handle, &adcRightValue);
@@ -499,7 +507,7 @@ void pid(){
         changeDutyCycle(MOTORMAXPERIOD, right);
         changeDutyCycle(MOTORMAXPERIOD, left);
 
-        while(adcFrontValue >= 5000){
+        while(adcFrontValue >= 4000){
             ADC_convert(adc_front_handle, &adcFrontValue);
         }
     }
@@ -529,6 +537,7 @@ void pid(){
         changeDutyCycle(MOTORMAXPERIOD - abs(u), left);
         changeDutyCycle(MOTORMAXPERIOD, right);
 
+
         //putString("too close \n\r");
     }
     else if(u>0){
@@ -551,29 +560,30 @@ void pid(){
 }
 
 
-//void increaseKp(){
-//    kp += .2;
-//    sprintf(str, "kp: %lf\n\r", kp);
-//    putString(str);
-//}
-//
-//void decreaseKp(){
-//    kp -= .2;
-//    sprintf(str, "kp: %lf\n\r", kp);
-//    putString(str);
-//}
-//
-//void increaseKi(){
-//    ki += .2;
-//    sprintf(str, "ki: %lf\n\r", ki);
-//    putString(str);
-//}
-//
-//void decreaseKi(){
-//    ki -= .2;
-//    sprintf(str, "ki: %lf\n\r", ki);
-//    putString(str);
-//}
+
+void increaseKp(){
+    kp += .2;
+}
+
+void decreaseKp(){
+    kp -= .2;
+}
+
+void increaseKi(){
+    ki += .2;
+}
+
+void decreaseKi(){
+    ki -= .2;
+}
+
+void increaseKd(){
+    kd += .2;
+}
+
+void decreaseKd(){
+    kd -= .2;
+}
 
 
 

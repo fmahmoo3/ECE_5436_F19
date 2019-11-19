@@ -57,10 +57,8 @@
 #include "printThread.h"
 
 /* Stack size in bytes */
-#define THREADSTACKSIZE    1024
+#define THREADSTACKSIZE    2048
 
-// Global Variables:
-//UART_Handle uart_handle;// Global UART_Handle, so we can print to our console from any thread.
 
 /*
  *  ======== main ========
