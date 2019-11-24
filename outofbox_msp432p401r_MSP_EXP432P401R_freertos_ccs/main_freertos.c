@@ -141,7 +141,7 @@ int main(void)
         /* pthread_create() failed */
         while (1);
     }
-    /* End of create Print Thread*/
+    /* End of create print Thread*/
 
 
     /* Start the FreeRTOS scheduler */

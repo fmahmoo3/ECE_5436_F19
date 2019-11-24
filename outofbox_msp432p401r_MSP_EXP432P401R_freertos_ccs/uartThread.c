@@ -14,26 +14,27 @@
 pthread_t uartThread_handler;   // used in main_freertos.c to latch on to the uartThread
 
 void *uartThread(void *arg0) {
-    commandsInit();
-    putString("\n\n\rBeginning Program\r\n");
+    commandsInit(); // Initialize the lookUpTable for commands
+    putString("\n\n\rBeginning Program\r\n"); // print to UART, that board as been reset
 
-    char inChar1;
-    char inChar2;
+    char inChar1; // Used to save the first character user inputs for commands
+    char inChar2; // Used to save the second character user inputs for commands
 
     while(1){
-        putString("\nEnter your command: ");
-        getChar(&inChar1);
-        if(inChar1 != ' ') {
-            putChar(&inChar1);
+        putString("\nEnter your command: "); // Let users know UART is ready to receive commands
+        getChar(&inChar1); // Read first char user inputs
 
-            getChar(&inChar2);
-            putChar(&inChar2);
+        if(inChar1 != ' ') { // If first Char is not empty, begin determining if command is valid and running command
+            putChar(&inChar1); // echo value to UART so user knows what they wrote
 
-            putString("\n\r");
+            getChar(&inChar2); // Read second char form user input
+            putChar(&inChar2); // echo value to UART so user knows what they wrote
 
-            if(commandUnderstood(inChar1, inChar2) == 1){
+            putString("\n\r"); // go to next line on UART console for clear formatting
+
+            if(commandUnderstood(inChar1, inChar2) == 1){ // call to function where it can see the lookUpTable and determine it is a command
                 putString("\nYour Command Was Understood: ");
-                runCommand(inChar1, inChar2);
+                runCommand(inChar1, inChar2); // call to function where it can see the lookUpTable and run the command
                 putString("\n\n\r");
             }
             else{

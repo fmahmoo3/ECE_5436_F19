@@ -12,15 +12,14 @@
 pthread_t heartBeatThread_handler;
 
 /*
- *  blinks a blue led on the MSP432P401R
+ *  blinks a Red led on the MSP432P401R
  */
 void *heartBeatThread(void *arg0){
-    const TickType_t xDelay = 500 / portTICK_PERIOD_MS;
     GPIO_setAsOutputPin(GPIO_PORT_P1, GPIO_PIN0); // LED 1 Red on Board
 
     while (1) {
-        GPIO_toggleOutputOnPin(GPIO_PORT_P1, GPIO_PIN0);
-        vTaskDelay( xDelay );
+        GPIO_toggleOutputOnPin(GPIO_PORT_P1, GPIO_PIN0); // If output is LOW, will set HIGH. And vice versa
+        vTaskDelay( 500 / portTICK_PERIOD_MS ); // 500 [ms] Delay
     }
 }
 

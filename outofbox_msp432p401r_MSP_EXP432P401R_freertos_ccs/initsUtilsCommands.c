@@ -20,7 +20,7 @@
 #include "initsUtilsCommands.h"
 
 /* Global Variables */
-char str[25]; // used to print numbers
+char str[25]; // temp vairable used to print numbers
 
 
 /* Handle to write to UART */
@@ -220,7 +220,7 @@ void getChar(char *val){
     UART_read(uart_handle, val, 1);
 }
 
-/* This was made since using putString depends on having string which has a \0 at the end. */
+/* This was made since using putString depends on having string which has a '\0' at the end. */
 void putChar(char *val){
     UART_write(uart_handle, val, 1);
 }
@@ -258,24 +258,24 @@ void commandsInit(){
     GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN1);
     GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN2);
 
-
-    lookUpTable['t'-'a']['r'-'a'] = &toggleRed; //tr; toggle red led
-    lookUpTable['t'-'a']['g'-'a'] = &toggleGreen; //tg; toggle green led
-    lookUpTable['t'-'a']['b'-'a'] = &toggleBlue; //tb; toggle blue led
-    lookUpTable['d'-'a']['f'-'a'] = &frontSensorRead; //df; distance sensor front read
-    lookUpTable['d'-'a']['r'-'a'] = &rightSensorRead; //dr; distance sensor right read
-    lookUpTable['g'-'a']['o'-'a'] = &start; //go; runs both motors in robots forward direction
-    lookUpTable['r'-'a']['e'-'a'] = &backwards; //re; runs both motors in robots backwards direction
-    lookUpTable['s'-'a']['t'-'a'] = &stop; //st; turn motors off
-    lookUpTable['h'-'a']['s'-'a'] = &highSpeed; //hs; increase duty cycle to 100%, no specific direction
-    lookUpTable['r'-'a']['r'-'a'] = &rotateRight; //rr; rotates robot towards right, no specific speed
-    lookUpTable['r'-'a']['l'-'a'] = &rotateLeft; //rl; rotates robot towards left, no specific speed
-    lookUpTable['i'-'a']['p'-'a'] = &increaseKp; //ip; increases kp by .2
-    lookUpTable['d'-'a']['p'-'a'] = &decreaseKp; //dp; decreases kp by .2
-    lookUpTable['i'-'a']['i'-'a'] = &increaseKi; //ii; increases ki by .2
-    lookUpTable['d'-'a']['i'-'a'] = &decreaseKi; //di; decreases ki by .2
-    lookUpTable['i'-'a']['d'-'a'] = &increaseKd; //id; increases kd by .2
-    lookUpTable['d'-'a']['d'-'a'] = &decreaseKd; //dd; decreases kd by .2
+    // Initialize command interpretor
+    lookUpTable['t'-'a']['r'-'a'] = &toggleRed;         //tr; toggle red led
+    lookUpTable['t'-'a']['g'-'a'] = &toggleGreen;       //tg; toggle green led
+    lookUpTable['t'-'a']['b'-'a'] = &toggleBlue;        //tb; toggle blue led
+    lookUpTable['d'-'a']['f'-'a'] = &frontSensorRead;   //df; distance sensor front read
+    lookUpTable['d'-'a']['r'-'a'] = &rightSensorRead;   //dr; distance sensor right read
+    lookUpTable['g'-'a']['o'-'a'] = &start;             //go; run maze
+    lookUpTable['r'-'a']['e'-'a'] = &backwards;         //re; runs both motors in robots backwards direction
+    lookUpTable['s'-'a']['t'-'a'] = &stop;              //st; turn motors off
+    lookUpTable['h'-'a']['s'-'a'] = &highSpeed;         //hs; increase duty cycle to 100%, no specific direction
+    lookUpTable['r'-'a']['r'-'a'] = &rotateRight;       //rr; rotates robot towards right, no specific speed
+    lookUpTable['r'-'a']['l'-'a'] = &rotateLeft;        //rl; rotates robot towards left, no specific speed
+    lookUpTable['i'-'a']['p'-'a'] = &increaseKp;        //ip; increases kp by .2
+    lookUpTable['d'-'a']['p'-'a'] = &decreaseKp;        //dp; decreases kp by .2
+    lookUpTable['i'-'a']['i'-'a'] = &increaseKi;        //ii; increases ki by .2
+    lookUpTable['d'-'a']['i'-'a'] = &decreaseKi;        //di; decreases ki by .2
+    lookUpTable['i'-'a']['d'-'a'] = &increaseKd;        //id; increases kd by .2
+    lookUpTable['d'-'a']['d'-'a'] = &decreaseKd;        //dd; decreases kd by .2
 }
 
 int commandUnderstood(char a, char b){
@@ -293,38 +293,14 @@ void runCommand(char a, char b){
 
 void toggleRed(){
     GPIO_toggleOutputOnPin(GPIO_PORT_P2, GPIO_PIN0);
-//    putString("Red LED was Toggled");
-//
-//    if(GPIO_getInputPinValue(GPIO_PORT_P2, GPIO_PIN0) == GPIO_INPUT_PIN_HIGH){
-//        putString(" HIGH");
-//    }
-//    else{
-//        putString(" LOW");
-//    }
 }
 
 void toggleGreen(){
     GPIO_toggleOutputOnPin(GPIO_PORT_P2, GPIO_PIN1);
-//    putString("Green LED was Toggled");
-//
-//    if(GPIO_getInputPinValue(GPIO_PORT_P2, GPIO_PIN1) == GPIO_INPUT_PIN_HIGH){
-//        putString(" HIGH");
-//    }
-//    else{
-//        putString(" LOW");
-//    }
 }
 
 void toggleBlue(){
     GPIO_toggleOutputOnPin(GPIO_PORT_P2, GPIO_PIN2);
-//    putString("Blue LED was Toggled ");
-//
-//    if(GPIO_getInputPinValue(GPIO_PORT_P2, GPIO_PIN2) == GPIO_INPUT_PIN_HIGH){
-//        putString("HIGH");
-//    }
-//    else{
-//        putString("LOW");
-//    }
 }
 
 void frontSensorRead(){
@@ -382,8 +358,6 @@ void backwards(){
 
     changeDutyCyclePercent(75, left);
     changeDutyCyclePercent(75, right);
-
-//    putString("Robot is moving backwards");
 }
 
 void stop(){
@@ -408,30 +382,21 @@ void stop(){
 }
 
 void highSpeed(){
-    // Since we are simply increase speed the motors, we do not need to set the motor control directions
-
+    // Since we are simply increasing motor speed, we do not need to set the motor control directions
     changeDutyCyclePercent(100, left);
     changeDutyCyclePercent(100, right);
-
-//    putString("Robot is moving at High Speed");
 }
 
 void rotateRight(){
     // Since we are simply rotating, we do not need to adjust the motor speed
-
     GPIO_setOutputLowOnPin(GPIO_PORT_P3, GPIO_PIN6); //Left Motor
     GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN6); //Right Motor
-
-//    putString("Robot is rotating right");
 }
 
 void rotateLeft(){
     // Since we are simply rotating, we do not need to adjust the motor speed
-
     GPIO_setOutputHighOnPin(GPIO_PORT_P3, GPIO_PIN6); //Left Motor
     GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN6); //Right Motor
-
-//    putString("Robot is rotating left");
 }
 
 
@@ -496,9 +461,12 @@ void changeDutyCycle(uint32_t val, uint8_t motor){
  */
 
 void pid(){
+
+    // read in values from both distance sensors
     ADC_convert(adc_right_handle, &adcRightValue);
     ADC_convert(adc_front_handle, &adcFrontValue);
 
+    /* Begin process of taking left turn if obstacle in front and to right */
     if(adcFrontValue >= thresholdFront && adcRightValue >= thresholdRight){
         //Rotate Left
         GPIO_setOutputHighOnPin(GPIO_PORT_P3, GPIO_PIN6); //Left Motor
@@ -511,32 +479,37 @@ void pid(){
             ADC_convert(adc_front_handle, &adcFrontValue);
         }
     }
+    /* End process of taking left turn if obstacle in front and to right */
 
 
     //Initialize Motor so robot moves in forward direction
     GPIO_setOutputLowOnPin(GPIO_PORT_P3, GPIO_PIN6); //Left Motor
     GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN6); //Right Motor
 
-    ADC_convert(adc_right_handle, &adcRightValue);
 
-    pid_error = middle-adcRightValue;
+    ADC_convert(adc_right_handle, &adcRightValue); // read right distance sensor value
 
+    /* Begin PID Algorithim for follow right wall */
+    pid_error = middle-adcRightValue; // calculate error for following right way algorithim
+
+    // threshold value for error
     if(pid_error<=300 && pid_error>=-300){
         pid_error = 0;
     }
 
+    /* Begin Calculate pid, using error value */
     p = (kp*pid_error);
     i = ki*(pid_error+last_error);
     d = kd*(pid_error-last_error);
 
     u = p+i+d;
+    /* End Calculate pid, using error value */
 
     last_error = pid_error;
 
     if(u<0){
         changeDutyCycle(MOTORMAXPERIOD - abs(u), left);
         changeDutyCycle(MOTORMAXPERIOD, right);
-
 
         //putString("too close \n\r");
     }
@@ -552,15 +525,17 @@ void pid(){
 
         //putString("just right! \n\r");
     }
+    /* End PID Algorithim for follow right wall */
 
-    timeThroughMaze += 50;
+    timeThroughMaze += 50; //  increment time since maze started by 50[ms]
+
+    // if thin line has been seen by lightSensorThread, save error to buffer
     if(thinLineStatus == 1){
         saveToBuffer(pid_error);
     }
 }
 
-
-
+/* Functions that will help debug PID from UART console */
 void increaseKp(){
     kp += .2;
 }
@@ -608,7 +583,7 @@ uint8_t mazeStarted(){
 }
 
 void saveToBuffer(int pid_error){
-    if(saveValue == 1){
+    if(saveValue == 1){ // this will cause values to save 100[ms] not 50[ms] (every other run of pid)
         if(useBuff == 0){
             //Use buff0
             buff0[buff0Index++] = pid_error;
@@ -619,36 +594,36 @@ void saveToBuffer(int pid_error){
         }
 
         if(useBuff == 0 && buff0Index == 20){
-            useBuff = 1;
-            buff0Index = 0;
+            useBuff = 1; // start using buff1
+            buff0Index = 0; // reset buff0 index to 0 for when printing in buff0 later
             //Signal to print buff0
             sem_post(&sema);
         }
 
         if(useBuff == 1 && buff1Index == 20){
-            useBuff = 0;
-            buff1Index = 0;
+            useBuff = 0; // start using buff0
+            buff1Index = 0; // reset buff1 index to 0 for when printing in buff1 later
             //Signal to print buff1
             sem_post(&sema);
         }
 
 
-        saveValue = 0;
+        saveValue = 0; // will NOT save value on next call to function
     }
     else{
-        saveValue = 1;
+        saveValue = 1; // will save value on next call to function
     }
 }
 
 void printBuff(){
     putString("\n\n\r");
     int k;
-    if(useBuff == 1){ // saving to buff1 so print buff0
+    if(useBuff == 1){ // saving to buff1 so print buff0 (if saving to buff1 then buff0 is ready to be printed)
         for(k = 0; k<20; k++){
             sprintf(str,"%d\n\r",buff0[k]);
             putString(str);
 
-            vTaskDelay( 10 / portTICK_PERIOD_MS );
+            vTaskDelay( 10 / portTICK_PERIOD_MS ); // Allows time for LED to be seen while not going over 2[s] time slot until next buffer is full
         }
     }
     else{
@@ -656,7 +631,7 @@ void printBuff(){
             sprintf(str,"%d\n\r",buff1[k]);
             putString(str);
 
-            vTaskDelay( 10 / portTICK_PERIOD_MS );
+            vTaskDelay( 10 / portTICK_PERIOD_MS ); // Allows time for LED to be seen while not going over 2[s] time slot until next buffer is full
         }
     }
 }
